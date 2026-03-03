@@ -1,0 +1,45 @@
+# Datasets
+datasets/
+data/raw/
+data/processed/
+*.zip
+*.tar.gz
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Training outputs
+checkpoints/
+runs/
+wandb/
+*.pth
+*.pt
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local config
+CLAUDE.md
+.claude/
