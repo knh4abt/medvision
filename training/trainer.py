@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.amp import autocast, GradScaler
 from tqdm import tqdm
 
 import config
@@ -7,13 +8,14 @@ from utils.metrics import compute_metrics
 
 
 class Trainer:
-    """Handles the training and validation loop."""
+    """Handles the training and validation loop with mixed precision support."""
 
     def __init__(self, model, train_loader, val_loader, device):
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.device = device
+        self.use_amp = device.type == "cuda"
 
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.AdamW(
@@ -22,6 +24,7 @@ class Trainer:
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, T_max=config.NUM_EPOCHS
         )
+        self.scaler = GradScaler("cuda", enabled=self.use_amp)
 
     def train_epoch(self, epoch):
         self.model.train()
@@ -33,10 +36,15 @@ class Trainer:
             images, labels = images.to(self.device), labels.to(self.device)
 
             self.optimizer.zero_grad()
-            outputs = self.model(images)
-            loss = self.criterion(outputs, labels)
-            loss.backward()
-            self.optimizer.step()
+            with autocast(device_type=self.device.type, enabled=self.use_amp):
+                outputs = self.model(images)
+                loss = self.criterion(outputs, labels)
+
+            self.scaler.scale(loss).backward()
+            self.scaler.unscale_(self.optimizer)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
 
             running_loss += loss.item() * images.size(0)
             all_preds.extend(outputs.argmax(dim=1).detach().cpu().numpy())
@@ -56,8 +64,9 @@ class Trainer:
 
         for images, labels in tqdm(self.val_loader, desc=f"Epoch {epoch+1}/{config.NUM_EPOCHS} [Val]"):
             images, labels = images.to(self.device), labels.to(self.device)
-            outputs = self.model(images)
-            loss = self.criterion(outputs, labels)
+            with autocast(device_type=self.device.type, enabled=self.use_amp):
+                outputs = self.model(images)
+                loss = self.criterion(outputs, labels)
 
             running_loss += loss.item() * images.size(0)
             all_preds.extend(outputs.argmax(dim=1).cpu().numpy())
