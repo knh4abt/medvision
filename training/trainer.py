@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.amp import autocast, GradScaler
 from tqdm import tqdm
+from pathlib import Path
 
 import config
 from utils.metrics import compute_metrics
@@ -25,6 +26,11 @@ class Trainer:
             self.optimizer, T_max=config.NUM_EPOCHS
         )
         self.scaler = GradScaler("cuda", enabled=self.use_amp)
+
+        self.best_val_acc = 0.0
+        self.patience_counter = 0
+
+        config.CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
     def train_epoch(self, epoch):
         self.model.train()
@@ -77,8 +83,6 @@ class Trainer:
         return epoch_loss, metrics
 
     def fit(self):
-        best_val_acc = 0.0
-
         for epoch in range(config.NUM_EPOCHS):
             train_loss, train_metrics = self.train_epoch(epoch)
             val_loss, val_metrics = self.validate(epoch)
@@ -90,7 +94,24 @@ class Trainer:
                 f"Val Loss: {val_loss:.4f}, Acc: {val_metrics['accuracy']:.4f}"
             )
 
-            if val_metrics["accuracy"] > best_val_acc:
-                best_val_acc = val_metrics["accuracy"]
+            # Checkpoint best model
+            if val_metrics["accuracy"] > self.best_val_acc:
+                self.best_val_acc = val_metrics["accuracy"]
+                self.patience_counter = 0
+                torch.save(
+                    {
+                        "epoch": epoch,
+                        "model_state_dict": self.model.state_dict(),
+                        "optimizer_state_dict": self.optimizer.state_dict(),
+                        "val_accuracy": self.best_val_acc,
+                    },
+                    config.CHECKPOINT_DIR / "best_model.pth",
+                )
+                print(f"  Saved best model (val_acc={self.best_val_acc:.4f})")
+            else:
+                self.patience_counter += 1
+                if self.patience_counter >= config.EARLY_STOPPING_PATIENCE:
+                    print(f"Early stopping at epoch {epoch+1}")
+                    break
 
-        return best_val_acc
+        return self.best_val_acc
