@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.amp import autocast, GradScaler
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from utils.metrics import compute_metrics
 
 
 class Trainer:
-    """Handles the training and validation loop with mixed precision support."""
+    """Handles the training and evaluation loop with mixed precision support."""
 
     def __init__(self, model, train_loader, val_loader, device):
         self.model = model.to(device)
@@ -27,6 +28,7 @@ class Trainer:
         )
         self.scaler = GradScaler("cuda", enabled=self.use_amp)
 
+        self.writer = SummaryWriter(log_dir=config.LOG_DIR)
         self.best_val_acc = 0.0
         self.patience_counter = 0
 
@@ -60,6 +62,10 @@ class Trainer:
 
         epoch_loss = running_loss / len(self.train_loader.dataset)
         metrics = compute_metrics(all_labels, all_preds)
+
+        self.writer.add_scalar("Loss/train", epoch_loss, epoch)
+        self.writer.add_scalar("Accuracy/train", metrics["accuracy"], epoch)
+
         return epoch_loss, metrics
 
     @torch.no_grad()
@@ -80,6 +86,10 @@ class Trainer:
 
         epoch_loss = running_loss / len(self.val_loader.dataset)
         metrics = compute_metrics(all_labels, all_preds)
+
+        self.writer.add_scalar("Loss/val", epoch_loss, epoch)
+        self.writer.add_scalar("Accuracy/val", metrics["accuracy"], epoch)
+
         return epoch_loss, metrics
 
     def fit(self):
@@ -114,4 +124,5 @@ class Trainer:
                     print(f"Early stopping at epoch {epoch+1}")
                     break
 
+        self.writer.close()
         return self.best_val_acc
