@@ -103,7 +103,7 @@ To reproduce the reported results:
 3. Run `python main.py` — training will early stop around epoch 15
 4. Run `python evaluate.py` to generate the classification report and confusion matrix
 
-Training was run on a CUDA-enabled GPU. CPU training is supported but significantly slower.
+Training was run on an NVIDIA GeForce GTX 1660 Ti (CUDA 12.1). CPU training is supported but significantly slower.
 
 ---
 
