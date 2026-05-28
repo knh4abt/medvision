@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11-blue) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c) ![License](https://img.shields.io/badge/license-MIT-green)
 
-Automated histological tissue classification to support digital pathology workflows in colorectal cancer research. Accurate tissue segmentation is a prerequisite for tumor microenvironment analysis, biomarker quantification, and drug efficacy assessment in oncology.
+Drug-efficacy studies in oncology depend on accurate tissue segmentation — you can't measure the tumor microenvironment, count infiltrating lymphocytes, or quantify stromal response if a pathologist (or a model) can't reliably tell tumor from stroma from background. This project does that for colorectal cancer histology with a small EfficientNet-B0.
 
 EfficientNet-B0 (pretrained on ImageNet) fine-tuned to classify H&E-stained tissue patches into 9 classes, achieving **99.6% validation accuracy** on the NCT-CRC-HE-100K benchmark — above the published state-of-the-art range of 94–97%.
 
