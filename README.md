@@ -4,7 +4,7 @@
 
 Drug-efficacy studies in oncology depend on accurate tissue segmentation — you can't measure the tumor microenvironment, count infiltrating lymphocytes, or quantify stromal response if a pathologist (or a model) can't reliably tell tumor from stroma from background. This project does that for colorectal cancer histology with a small EfficientNet-B0.
 
-EfficientNet-B0 (pretrained on ImageNet) fine-tuned to classify H&E-stained tissue patches into 9 classes, achieving **99.6% validation accuracy** on the NCT-CRC-HE-100K benchmark — above the published state-of-the-art range of 94–97%.
+EfficientNet-B0 (pretrained on ImageNet) fine-tuned to classify H&E-stained tissue patches into 9 classes, achieving **99.6% validation accuracy** on a random 80/20 split of NCT-CRC-HE-100K. Published results of 94–97% are measured on the separate CRC-VAL-HE-7K test set (different patients), so the two numbers are not directly comparable.
 
 Built with PyTorch and timm.
 
@@ -13,6 +13,8 @@ Built with PyTorch and timm.
 ## Results
 
 Trained on 80/20 split. Early stopped at epoch 15/30.
+
+Patches from the same patient can land in both train and validation, so 99.6% is an upper bound. The honest next test is the external CRC-VAL-HE-7K set.
 
 **Validation accuracy: 99.6%**
 
